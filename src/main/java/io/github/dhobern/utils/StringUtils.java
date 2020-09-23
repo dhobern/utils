@@ -13,7 +13,7 @@ import java.io.PrintWriter;
  */
 public class StringUtils {
 
-    private static String toCsv(String ... values) {
+    public static String toCsv(String ... values) {
         StringBuilder sb = new StringBuilder();
         boolean first = true;
         for (String v: values) {
