@@ -25,7 +25,8 @@ public class StringUtils {
             if (v == null || v.equalsIgnoreCase("NULL")) {
                 v = "";
             }
-            if (v.contains(",")) {
+            if (v.contains(",") || v. contains("\"")) {
+                v.replaceAll("\"", "\\\"");
                 sb.append("\""); 
                 sb.append(v); 
                 sb.append("\""); 
