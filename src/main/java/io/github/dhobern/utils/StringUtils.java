@@ -37,4 +37,7 @@ public class StringUtils {
         return sb.toString();
     }
 
+    public static String safeString(Integer i) {
+        return (i == null) ? "" : i.toString();
+    }
 }
