@@ -6,16 +6,22 @@
 package io.github.dhobern.utils;
 
 import java.io.BufferedReader;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Type;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
@@ -40,25 +46,38 @@ public class CSVReader<T> {
     
     private boolean stripQuotes = false;
     private boolean suppressNulls = false;
-    private String separator;
+    private final String separator;
+    private final String fileName;
+    
+    private List<T> cachedList;
     
     private CSVReader() {
+        fileName = null;
+        separator = null;
     }
     
-    public CSVReader(BufferedReader bufferedReader, Class c) {
-        this(bufferedReader, c, "\t");
-    }
-
-    @SuppressWarnings("unchecked")
-    public CSVReader(BufferedReader bufferedReader, Class c, String sep) {
-        separator = sep;
-        if (separator.equals(",")) {
-            separator = ",(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)";
+    public CSVReader(String fileName, Class c, String sep) 
+            throws UnsupportedEncodingException, FileNotFoundException {
+        this.fileName = fileName;
+        if (sep.equals(",")) {
+            sep = ",(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)";
         }
+        separator = sep;
+        clazz = c;
+        initialise();
+    }
+    
+    public CSVReader(String fileName, Class c) 
+            throws UnsupportedEncodingException, FileNotFoundException {
+        this(fileName, c, "\t");
+    }
+    
+    @SuppressWarnings("unchecked")
+    private void initialise()
+    {
         try {
-            clazz = c;
-            constructor = c.getDeclaredConstructor();
-            reader = bufferedReader;
+            constructor = clazz.getDeclaredConstructor();
+            reader = new BufferedReader(new InputStreamReader(new FileInputStream(fileName), "UTF-8"));
             String line = reader.readLine();
             if (line != null) {
                 HashMap<String,Integer> columnIndexes = new HashMap<>();
@@ -79,8 +98,16 @@ public class CSVReader<T> {
         }
     }
     
+    private void terminate(){
+        try {
+            reader.close();
+        } catch (IOException ex) {
+            java.util.logging.Logger.getLogger(CSVReader.class.getName()).log(Level.SEVERE, null, ex);
+        }
+    }
+    
     @SuppressWarnings("unchecked")
-    public T read() {
+    private T read() {
         T record = null;
         
         try {
@@ -114,11 +141,44 @@ public class CSVReader<T> {
         return record;
     }
     
+    public List<T> getList() {
+        return getList(false);
+    }
+    
+    public List<T> getList(boolean cacheList) {
+        
+        initialise();
+        
+        List<T> list = cachedList;
+        
+        if (list == null) {
+            list = new ArrayList<>();
+
+            T t;
+            while ((t = read()) != null) {
+                list.add(t);
+            }
+            
+            if (cacheList) {
+                cachedList = list;
+            }
+        }
+        
+        terminate();
+        
+        return list;
+    }
+    
     public Map<String,T> getMap(Function<T,String> method) {
+        return getMap(method, false);
+    }
+    
+    public Map<String,T> getMap(Function<T,String> method, boolean cacheList) {
+        List<T> list = getList(cacheList);
+        
         Map<String,T> map = new LinkedHashMap<>();
         
-        T t;
-        while ((t = read()) != null) {
+        for (T t : list) {
             map.put(method.apply(t), t);
         }
         
@@ -126,10 +186,15 @@ public class CSVReader<T> {
     }
 
     public Map<Integer,T> getIntegerMap(Function<T,Integer> method) {
+        return getIntegerMap(method, false);
+    }
+
+    public Map<Integer,T> getIntegerMap(Function<T,Integer> method, boolean cacheList) {
+        List<T> list = getList(cacheList);
+        
         Map<Integer,T> map = new LinkedHashMap<>();
         
-        T t;
-        while ((t = read()) != null) {
+        for (T t : list) {
             map.put(method.apply(t), t);
         }
         
@@ -137,10 +202,15 @@ public class CSVReader<T> {
     }
 
     public Map<String,Set<T>> getKeyedSets(Function<T,String> method) {
+        return getKeyedSets(method, false);
+    }
+    
+    public Map<String,Set<T>> getKeyedSets(Function<T,String> method, boolean cacheList) {
+        List<T> list = getList(cacheList);
+        
         Map<String,Set<T>> map = new LinkedHashMap<>();
         
-        T t;
-        while ((t = read()) != null) {
+        for (T t : list) {
             String key = method.apply(t);
             Set<T> set = map.get(key);
             if (set == null) {
@@ -154,10 +224,15 @@ public class CSVReader<T> {
     }
 
     public Map<Integer,Set<T>> getIntegerKeyedSets(Function<T,Integer> method) {
+        return getIntegerKeyedSets(method, false);
+    }
+    
+    public Map<Integer,Set<T>> getIntegerKeyedSets(Function<T,Integer> method, boolean cacheList) {
+        List<T> list = getList(cacheList);
+        
         Map<Integer,Set<T>> map = new LinkedHashMap<>();
         
-        T t;
-        while ((t = read()) != null) {
+        for (T t : list) {
             Integer key = method.apply(t);
             Set<T> set = map.get(key);
             if (set == null) {
