@@ -22,7 +22,9 @@ public class ZipUtils {
 
     private static final Logger LOG = LoggerFactory.getLogger(ZipUtils.class);
 
-    public static void zipFolder(String folderName, String zipFileName) throws IOException {
+    public static boolean zipFolder(String folderName, String zipFileName) throws IOException {
+        boolean success = true;
+        
         File fileToZip = new File(folderName);
         if (fileToZip.isDirectory()) {
             FileOutputStream fos = new FileOutputStream(zipFileName);
@@ -34,7 +36,10 @@ public class ZipUtils {
             fos.close();
         } else {
             LOG.error(folderName + " is not a folder");
+            success = false;
         }
+        
+        return success;
     }
  
     private static void zipFile(File fileToZip, String fileName, ZipOutputStream zipOut) throws IOException {
