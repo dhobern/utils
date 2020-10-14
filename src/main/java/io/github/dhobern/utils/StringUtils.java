@@ -12,6 +12,15 @@ import java.io.PrintWriter;
  * @author stang
  */
 public class StringUtils {
+    
+    public static String abbreviate(String s, int length) {
+        if (length == 0) {
+            s = "";
+        } else if (s != null && length >= 3 && s.length() > length) {
+            s = s.substring(0, length - 3) + "...";
+        }
+        return s;
+    }
 
     public static String buildCSV(String ... values) {
         StringBuilder sb = new StringBuilder();
