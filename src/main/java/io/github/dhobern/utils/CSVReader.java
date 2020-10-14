@@ -254,6 +254,11 @@ public class CSVReader<T> {
                 if (types.length == 1 && canSupportType(types[0])) {
                     String p = m.getName().substring(3).toLowerCase();
                     Integer column = columns.get(p);
+                    // Special case for column named class - it needs a setter
+                    // using the name clazz
+                    if (column == null && p.equals("clazz")) {
+                        column = columns.get("class");
+                    }
                     if (column != null) {
                         String t = types[0].getTypeName();
                         SetterMethod setter = map.get(p);
