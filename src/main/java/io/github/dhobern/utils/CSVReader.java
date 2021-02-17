@@ -86,6 +86,10 @@ public class CSVReader<T> {
                     String columnHeading = columnHeadings[i].toLowerCase();
                     if (columnHeading.startsWith("\"") && columnHeading.endsWith("\"")) {
                         columnHeading = columnHeading.substring(1, columnHeading.length() - 1);
+                        // Special case so that columns named class can be read
+                        if (columnHeading.equals("class")) {
+                            columnHeading = "clazz";
+                        }
                     }
                     columnIndexes.put(columnHeading, i);
                 }
